@@ -1,0 +1,28 @@
+# AlphaVX Configuration
+# Copy this file and customize as needed.
+
+api:
+  # API key can also be set via ALPHAVX_API_KEY or ALPHAGENOME_API_KEY env var
+  key_env: ALPHAVX_API_KEY
+  max_retries: 3
+  retry_delay: 5.0
+
+scoring:
+  modalities:
+    - RNA_SEQ
+    - SPLICE_SITES
+    - SPLICE_SITE_USAGE
+    - SPLICE_JUNCTIONS
+    - DNASE
+    - ATAC
+    - CHIP_HISTONE
+    - CHIP_TF
+  quantile_threshold: 0.995
+  sequence_length: 1048576  # 2^20, AlphaGenome optimal
+
+output:
+  format:
+    - csv
+    - html
+  plots: true
+  cache: true

@@ -70,6 +70,7 @@ __pypackages__/
 # Environment & Secrets
 # ========================
 .env
+.env.alphavx
 .env.local
 .env.prod
 .env.dev
@@ -157,3 +158,11 @@ target/
 .spyderproject
 .spyproject
 Trash/
+
+# ========================
+# AlphaVX specific
+# ========================
+results/
+cache/
+*.db
+alphavx_cache.db

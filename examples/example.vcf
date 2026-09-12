@@ -1,0 +1,14 @@
+##fileformat=VCFv4.2
+##fileDate=20260908
+##source=AlphaVX-example
+##reference=GRCh38
+##INFO=<ID=GENE,Number=1,Type=String,Description="Associated gene symbol">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE
+chr17	7674220	rs28934578	G	A	100	PASS	GENE=TP53;AF=0.0001	GT:DP	0/1:32
+chr13	32340300	rs80359550	C	T	100	PASS	GENE=BRCA2;AF=0.0002	GT:DP	0/1:28
+chr7	117559590	rs113993960	G	A	100	PASS	GENE=CFTR;AF=0.0005	GT:DP	0/1:45
+chr17	43093449	rs80357906	A	G	100	PASS	GENE=BRCA1;AF=0.0001	GT:DP	0/1:30
+chr12	25245350	rs121913529	C	T	100	PASS	GENE=KRAS;AF=0.0001	GT:DP	0/1:50
