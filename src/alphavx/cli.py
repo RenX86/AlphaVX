@@ -108,7 +108,7 @@ def score(
     # Setup cache
     cache = None
     if config.cache_enabled:
-        cache = ResultCache(output / "cache")
+        cache = ResultCache(output / "cache", config_hash=config.scoring_fingerprint)
         stats = cache.stats()
         if stats["count"] > 0:
             typer.echo(f"Cache: {stats['count']} variants already cached")
@@ -140,9 +140,20 @@ def score(
 
     # Generate plots
     try:
-        from .plots import plot_summary_heatmap
+        from .plots import plot_summary_heatmap, plot_variant_detail
         plots_dir = output / "plots"
         plot_summary_heatmap(df, plots_dir / "summary_heatmap.png", config.quantile_threshold)
+
+        # Generate per-variant detail plots
+        variant_keys = df["variant_key"].unique() if "variant_key" in df.columns else []
+        for vk in variant_keys:
+            safe_name = str(vk).replace(":", "_").replace(">", "_")
+            plot_variant_detail(
+                df, vk, plots_dir / "per_variant" / f"{safe_name}.png",
+                config.quantile_threshold,
+            )
+        if len(variant_keys):
+            logger.info("Generated %d per-variant plots", len(variant_keys))
     except Exception as e:
         logger.warning("Plot generation failed: %s", e)
 

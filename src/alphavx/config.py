@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import os
 from dataclasses import dataclass, field
@@ -55,6 +57,20 @@ class Config:
     cache_enabled: bool = True
     modalities: list[str] = field(default_factory=lambda: list(DEFAULT_MODALITIES))
 
+    @property
+    def scoring_fingerprint(self) -> str:
+        """Return a short hash of config fields that affect API results.
+
+        Covers ``modalities`` (sorted) and ``sequence_length`` so that
+        different scoring configurations produce distinct cache entries.
+        """
+        canonical = json.dumps(
+            {"modalities": sorted(self.modalities),
+             "sequence_length": self.sequence_length},
+            sort_keys=True,
+        )
+        return hashlib.sha256(canonical.encode()).hexdigest()[:12]
+
 
 def load_config(config_path: Path | None = None) -> Config:
     """Load configuration from YAML file and/or environment variables.
@@ -71,6 +87,7 @@ def load_config(config_path: Path | None = None) -> Config:
         ValueError: If no API key is found in config or environment.
     """
     config = Config()
+    key_env_name: str | None = None
 
     # Load from YAML if provided
     if config_path is not None:
@@ -85,6 +102,8 @@ def load_config(config_path: Path | None = None) -> Config:
             api_section = raw.get("api", {})
             scoring_section = raw.get("scoring", {})
             output_section = raw.get("output", {})
+
+            key_env_name = api_section.get("key_env")
 
             if "max_retries" in api_section:
                 config.max_retries = int(api_section["max_retries"])
@@ -103,10 +122,15 @@ def load_config(config_path: Path | None = None) -> Config:
 
     # Resolve API key: env var takes precedence if config doesn't set it
     if not config.api_key:
-        config.api_key = os.environ.get(
-            "ALPHAVX_API_KEY",
-            os.environ.get("ALPHAGENOME_API_KEY", ""),
-        )
+        # If YAML specified a custom env var name via key_env, try it first
+        if key_env_name:
+            config.api_key = os.environ.get(key_env_name, "")
+        # Fall back to the hardcoded env var names
+        if not config.api_key:
+            config.api_key = os.environ.get(
+                "ALPHAVX_API_KEY",
+                os.environ.get("ALPHAGENOME_API_KEY", ""),
+            )
 
     if not config.api_key:
         raise ValueError(

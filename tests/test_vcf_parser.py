@@ -84,6 +84,19 @@ chr13\t32340300\t.\tC\tT
         record = VariantRecord(chrom="chr1", pos=100, ref="A", alt="G")
         assert record.key == "chr1:100:A>G"
 
+    def test_parse_gzipped_vcf(self, tmp_path: Path) -> None:
+        """Should correctly parse .vcf.gz files."""
+        import gzip
+
+        vcf_file = tmp_path / "test.vcf.gz"
+        with gzip.open(vcf_file, "wt") as f:
+            f.write(VALID_VCF_CONTENT)
+
+        records = parse_vcf(vcf_file)
+        assert len(records) == 4
+        assert records[0].chrom == "chr17"
+        assert records[0].pos == 7674220
+
 
 class TestParseVariantString:
     """Tests for parse_variant_string()."""

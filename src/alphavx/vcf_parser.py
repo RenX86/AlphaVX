@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gzip
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -38,7 +39,7 @@ def parse_vcf(vcf_path: Path) -> list[VariantRecord]:
     Skips malformed lines with a warning rather than crashing.
 
     Args:
-        vcf_path: Path to a VCF file (.vcf or .vcf.gz not supported yet).
+        vcf_path: Path to a VCF file (.vcf or .vcf.gz).
 
     Returns:
         List of parsed VariantRecord objects.
@@ -53,7 +54,8 @@ def parse_vcf(vcf_path: Path) -> list[VariantRecord]:
 
     records: list[VariantRecord] = []
 
-    with open(vcf_path) as f:
+    opener = gzip.open(vcf_path, "rt") if str(vcf_path).endswith(".gz") else open(vcf_path)
+    with opener as f:
         for line_num, line in enumerate(f, start=1):
             line = line.strip()
 

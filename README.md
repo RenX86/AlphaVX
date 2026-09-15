@@ -14,8 +14,8 @@ AlphaGenome (DeepMind, Jan 2026) is a deep learning model that predicts how DNA 
 
 **AlphaVX** makes it practical to use:
 
-- **Batch processing** — Score hundreds of variants from a standard VCF file, not one at a time
-- **Smart batching** — Rate limiting, retry logic, and result caching so you don't lose progress
+- **VCF batch scoring** — Score all variants from a standard VCF file in one command
+- **Resilient execution** — Automatic retry with exponential backoff, result caching, and resumable runs
 - **Multi-modal scoring** — Expression (RNA-seq), splicing, chromatin (ATAC/DNase), histone marks (ChIP), TF binding — all scored automatically
 - **Interpretable output** — Per-variant report with significance flags, tissue-specific effects, and quantile rankings against common variants
 - **Gene panel filtering** — Focus on clinically relevant genes instead of scoring everything
@@ -181,15 +181,6 @@ pytest
 
 ## License
 
-MIT
+TBA
 
 ---
-
-## Citation
-
-```
-AlphaVX: AlphaGenome Variant Effect Interpreter. RenX86.
-GitHub: https://github.com/RenX86/AlphaVX
-```
-
-Built on [AlphaGenome](https://www.nature.com/articles/s41586-024-08444-x) by Google DeepMind.
