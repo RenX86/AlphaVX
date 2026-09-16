@@ -69,6 +69,9 @@ def parse_vcf(vcf_path: Path) -> list[VariantRecord]:
                 continue
 
             chrom = parts[0]
+            # Normalize chromosome names: AlphaGenome requires 'chr' prefix
+            if not chrom.startswith("chr"):
+                chrom = f"chr{chrom}"
             try:
                 pos = int(parts[1])
             except ValueError:

@@ -166,3 +166,5 @@ results/
 cache/
 *.db
 alphavx_cache.db
+*.vcf.gz
+clinvar*.vcf*
