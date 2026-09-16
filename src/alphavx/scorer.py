@@ -7,6 +7,7 @@ and integration with the result cache.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import TYPE_CHECKING, Callable
 
@@ -138,38 +139,63 @@ class VariantScorer:
         Returns:
             Combined DataFrame of all scored variants.
         """
+        import concurrent.futures
+        import threading
+
         all_dfs: list[pd.DataFrame] = []
         total = len(records)
         cached_count = 0
         error_count = 0
 
-        for i, record in enumerate(records):
-            if progress_callback:
-                progress_callback(i, total, record)
+        # Thread-safe counter for progress callback
+        completed = 0
+        progress_lock = threading.Lock()
 
-            # Check cache
+        def _process_record(record: VariantRecord) -> pd.DataFrame | None:
+            nonlocal cached_count, error_count, completed
+
+            # Check cache first
             if cache is not None and cache.has(record.key):
                 cached_data = cache.get(record.key)
                 if cached_data is not None:
-                    df = pd.DataFrame(cached_data)
-                    all_dfs.append(df)
-                    cached_count += 1
-                    logger.debug("Cache hit for %s", record.key)
-                    continue
+                    with progress_lock:
+                        cached_count += 1
+                        completed += 1
+                        if progress_callback:
+                            progress_callback(completed - 1, total, record)
+                    return pd.DataFrame(cached_data)
+
+            # Inform start of scoring if not cached
+            with progress_lock:
+                if progress_callback:
+                    progress_callback(completed, total, record)
 
             # Score with retry logic
             df = self._score_with_retry(record)
+            
+            with progress_lock:
+                completed += 1
+                if df is not None and not df.empty:
+                    # Cache the result
+                    if cache is not None:
+                        try:
+                            cache.put(record.key, df.to_dict(orient="list"))
+                        except Exception as e:
+                            logger.warning("Failed to cache %s: %s", record.key, e)
+                else:
+                    error_count += 1
 
-            if df is not None and not df.empty:
-                all_dfs.append(df)
-                # Cache the result
-                if cache is not None:
-                    try:
-                        cache.put(record.key, df.to_dict(orient="list"))
-                    except Exception as e:
-                        logger.warning("Failed to cache %s: %s", record.key, e)
-            else:
-                error_count += 1
+            return df
+
+        # Default max_workers to a sensible limit (e.g. 4-8) to avoid overwhelming the API
+        max_workers = min(8, max(4, (os.cpu_count() or 1) + 4))
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Map returns results in the same order as the input
+            results = executor.map(_process_record, records)
+            for df in results:
+                if df is not None and not df.empty:
+                    all_dfs.append(df)
 
         logger.info(
             "Batch complete: %d scored, %d from cache, %d errors out of %d total",

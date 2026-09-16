@@ -46,10 +46,12 @@ class ResultCache:
     """
 
     def __init__(self, cache_dir: Path, config_hash: str | None = None) -> None:
+        import threading
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.db_path = self.cache_dir / "alphavx_cache.db"
         self.config_hash = config_hash
+        self._lock = threading.Lock()
         self._init_db()
 
     def _init_db(self) -> None:
@@ -129,19 +131,20 @@ class ResultCache:
         """
         now = datetime.now(timezone.utc).isoformat()
         scores_json = json.dumps(scores, default=str)
-        with sqlite3.connect(self.db_path) as conn:
-            # Remove any previous entry for the same (variant, config) pair.
-            conn.execute(
-                "DELETE FROM variant_scores "
-                "WHERE variant_key = ? AND config_hash IS ?",
-                (variant_key, self.config_hash),
-            )
-            conn.execute(
-                "INSERT INTO variant_scores "
-                "(variant_key, scores_json, scored_at, config_hash) "
-                "VALUES (?, ?, ?, ?)",
-                (variant_key, scores_json, now, self.config_hash),
-            )
+        with self._lock:
+            with sqlite3.connect(self.db_path) as conn:
+                # Remove any previous entry for the same (variant, config) pair.
+                conn.execute(
+                    "DELETE FROM variant_scores "
+                    "WHERE variant_key = ? AND config_hash IS ?",
+                    (variant_key, self.config_hash),
+                )
+                conn.execute(
+                    "INSERT INTO variant_scores "
+                    "(variant_key, scores_json, scored_at, config_hash) "
+                    "VALUES (?, ?, ?, ?)",
+                    (variant_key, scores_json, now, self.config_hash),
+                )
             conn.commit()
         logger.debug("Cached scores for %s", variant_key)
 
