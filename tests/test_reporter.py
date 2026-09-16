@@ -177,3 +177,52 @@ class TestGenerateReport:
     def test_missing_scores_raises(self, tmp_path: Path):
         with pytest.raises(FileNotFoundError, match="No scores.csv"):
             generate_report(tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# VCF report
+# ---------------------------------------------------------------------------
+
+class TestVcfReport:
+    """Tests for generate_vcf_report."""
+
+    def test_generates_annotated_vcf(self, tmp_path: Path):
+        from alphavx.reporter import generate_vcf_report
+        
+        # Create a dummy VCF
+        vcf_path = tmp_path / "input.vcf"
+        vcf_path.write_text(
+            "##fileformat=VCFv4.2\n"
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+            "chr1\t100\t.\tA\tG\t.\t.\tGENE=GENE0\n"
+            "chr2\t200\t.\tC\tT\t.\t.\t.\n"
+        )
+        
+        # Create dummy DF with results matching one variant
+        df = pd.DataFrame({
+            "variant_key": ["chr1:100:A>G", "chr1:100:A>G"],
+            "output_type": ["RNA_SEQ", "DNASE"],
+            "raw_score": [-0.5, 0.1],
+            "quantile_score": [0.999, 0.1]
+        })
+        
+        out_path = generate_vcf_report(vcf_path, df, tmp_path, quantile_threshold=0.995)
+        
+        assert out_path.exists()
+        assert out_path.name == "annotated.vcf"
+        
+        lines = out_path.read_text().strip().split("\n")
+        assert any("ID=AVX_SIG" in line for line in lines)
+        assert any("ID=AVX_MOD" in line for line in lines)
+        assert any("ID=AVX_MAX" in line for line in lines)
+        
+        var_line1 = next(l for l in lines if l.startswith("chr1\t100"))
+        # Should have AVX_MAX=-0.5, AVX_SIG, AVX_MOD=RNA_SEQ
+        assert "AVX_MAX=-0.5" in var_line1
+        assert "AVX_SIG" in var_line1
+        assert "AVX_MOD=RNA_SEQ" in var_line1
+        assert "GENE=GENE0;" in var_line1
+        
+        var_line2 = next(l for l in lines if l.startswith("chr2\t200"))
+        # Not in DF, INFO should be untouched (which is '.')
+        assert var_line2.endswith("\t.")

@@ -22,7 +22,7 @@ from .config import load_config
 from .vcf_parser import parse_vcf, parse_variant_string
 from .cache import ResultCache
 from .scorer import VariantScorer
-from .reporter import generate_csv_report, generate_html_report, generate_report
+from .reporter import generate_csv_report, generate_html_report, generate_report, generate_vcf_report
 
 app = typer.Typer(
     name="alphavx",
@@ -137,6 +137,12 @@ def score(
     # Generate reports
     generate_csv_report(df, output, quantile_threshold=config.quantile_threshold)
     generate_html_report(df, output, quantile_threshold=config.quantile_threshold)
+
+    # Generate annotated VCF
+    try:
+        generate_vcf_report(vcf_path, df, output, quantile_threshold=config.quantile_threshold)
+    except Exception as e:
+        logger.warning("Annotated VCF generation failed: %s", e)
 
     # Generate plots
     try:

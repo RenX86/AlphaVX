@@ -49,6 +49,105 @@ def generate_csv_report(
     return scores_path
 
 
+def generate_vcf_report(
+    vcf_path: Path,
+    df: pd.DataFrame,
+    output_dir: Path,
+    quantile_threshold: float = 0.995,
+) -> Path:
+    """Generate an annotated VCF with AlphaVX scores in the INFO column.
+
+    Args:
+        vcf_path: Path to the original input VCF file.
+        df: Complete scoring results DataFrame.
+        output_dir: Directory to write the annotated VCF.
+        quantile_threshold: Cutoff for significance flagging.
+
+    Returns:
+        Path to the annotated annotated.vcf file.
+    """
+    import gzip
+    
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = output_dir / "annotated.vcf"
+
+    # Pre-compute variant annotations from DF
+    annotations = {}
+    if not df.empty and "variant_key" in df.columns:
+        if "quantile_score" in df.columns:
+            df["_is_sig"] = df["quantile_score"].abs() > quantile_threshold
+        else:
+            df["_is_sig"] = False
+
+        for vk, group in df.groupby("variant_key"):
+            max_row = group.loc[group["raw_score"].abs().idxmax()] if "raw_score" in group.columns else None
+            max_score = max_row["raw_score"] if max_row is not None else 0.0
+            
+            sig_mods = group[group["_is_sig"]]["output_type"].unique() if "output_type" in group.columns else []
+            
+            annotations[vk] = {
+                "max_score": max_score,
+                "is_sig": len(sig_mods) > 0,
+                "sig_mods": ",".join(sig_mods) if len(sig_mods) > 0 else None
+            }
+
+    # Write annotated VCF
+    opener = gzip.open(vcf_path, "rt") if str(vcf_path).endswith(".gz") else open(vcf_path)
+    with opener as f_in, open(out_path, "w") as f_out:
+        header_written = False
+        for line in f_in:
+            line = line.strip()
+            if line.startswith("##"):
+                f_out.write(line + "\n")
+                continue
+            
+            if line.startswith("#CHROM"):
+                # Inject new INFO headers before the CHROM line
+                f_out.write('##INFO=<ID=AVX_SIG,Number=0,Type=Flag,Description="AlphaVX significant hit">\n')
+                f_out.write('##INFO=<ID=AVX_MOD,Number=.,Type=String,Description="AlphaVX significant modalities">\n')
+                f_out.write('##INFO=<ID=AVX_MAX,Number=1,Type=Float,Description="AlphaVX maximum absolute raw score">\n')
+                f_out.write(line + "\n")
+                continue
+
+            if not line:
+                continue
+
+            parts = line.split("\t")
+            if len(parts) < 8:
+                f_out.write(line + "\n")
+                continue
+
+            chrom = parts[0] if parts[0].startswith("chr") else f"chr{parts[0]}"
+            pos = parts[1]
+            ref = parts[3]
+            alt = parts[4]
+            
+            # Note: For multi-allelic sites, we check the first alt allele for simplicity in the report
+            first_alt = alt.split(",")[0]
+            vk = f"{chrom}:{pos}:{ref}>{first_alt}"
+            
+            if vk in annotations:
+                ann = annotations[vk]
+                info = parts[7]
+                new_info = []
+                if info != ".":
+                    new_info.append(info)
+                
+                new_info.append(f"AVX_MAX={ann['max_score']:.5f}")
+                if ann["is_sig"]:
+                    new_info.append("AVX_SIG")
+                    if ann["sig_mods"]:
+                        new_info.append(f"AVX_MOD={ann['sig_mods']}")
+                
+                parts[7] = ";".join(new_info)
+            
+            f_out.write("\t".join(parts) + "\n")
+
+    logger.info("Annotated VCF: %s", out_path)
+    return out_path
+
+
 def generate_html_report(
     df: pd.DataFrame,
     output_dir: Path,
