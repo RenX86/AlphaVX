@@ -181,6 +181,6 @@ pytest
 
 ## License
 
-TBA
+[Apache 2.0](LICENSE)
 
 ---
