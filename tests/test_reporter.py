@@ -157,6 +157,47 @@ class TestHtmlReport:
         html = path.read_text(encoding="utf-8")
         assert "No significant results" in html
 
+    def test_includes_datatables_cdn(self, tmp_path: Path):
+        """Report should load DataTables from CDN."""
+        df = _make_df()
+        path = generate_html_report(df, tmp_path)
+        html = path.read_text(encoding="utf-8")
+        assert "jquery.dataTables" in html
+        assert "dataTables.buttons" in html
+
+    def test_includes_plotly_cdn(self, tmp_path: Path):
+        """Report should load Plotly from CDN."""
+        df = _make_df()
+        path = generate_html_report(df, tmp_path)
+        html = path.read_text(encoding="utf-8")
+        assert "plotly" in html.lower()
+
+    def test_embeds_json_data(self, tmp_path: Path):
+        """Significant hits should be embedded as JSON for DataTables."""
+        df = _make_df(significant=True)
+        path = generate_html_report(df, tmp_path)
+        html = path.read_text(encoding="utf-8")
+        assert "TABLE_DATA" in html
+        assert "HEATMAP_DATA" in html
+        assert "VOLCANO_DATA" in html
+
+    def test_has_tabs(self, tmp_path: Path):
+        """Report should have Overview, Data Table, and Charts tabs."""
+        df = _make_df()
+        path = generate_html_report(df, tmp_path)
+        html = path.read_text(encoding="utf-8")
+        assert "tab-overview" in html
+        assert "tab-table" in html
+        assert "tab-charts" in html
+
+    def test_has_dark_mode_toggle(self, tmp_path: Path):
+        """Report should include a dark mode toggle button."""
+        df = _make_df()
+        path = generate_html_report(df, tmp_path)
+        html = path.read_text(encoding="utf-8")
+        assert "toggleTheme" in html
+        assert "theme-toggle" in html
+
 
 # ---------------------------------------------------------------------------
 # generate_report (from scores.csv)
