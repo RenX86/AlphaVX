@@ -11,18 +11,21 @@ Usage:
 from __future__ import annotations
 
 import logging
-import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 
 from . import __version__
-from .config import load_config
-from .vcf_parser import parse_vcf, parse_variant_string
 from .cache import ResultCache
+from .config import load_config
+from .reporter import (
+    generate_csv_report,
+    generate_html_report,
+    generate_report,
+    generate_vcf_report,
+)
 from .scorer import VariantScorer
-from .reporter import generate_csv_report, generate_html_report, generate_report, generate_vcf_report
+from .vcf_parser import parse_variant_string, parse_vcf
 
 app = typer.Typer(
     name="alphavx",
@@ -54,6 +57,7 @@ def _get_console():
     """Get a Rich console for pretty output, or fall back to plain print."""
     try:
         from rich.console import Console
+
         return Console()
     except ImportError:
         return None
@@ -61,9 +65,13 @@ def _get_console():
 
 @app.callback()
 def main(
-    version: Optional[bool] = typer.Option(
-        None, "--version", "-v", callback=_version_callback,
-        is_eager=True, help="Show version and exit.",
+    version: bool | None = typer.Option(
+        None,
+        "--version",
+        "-v",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show version and exit.",
     ),
 ) -> None:
     """AlphaVX — AlphaGenome Variant Effect Interpreter."""
@@ -73,17 +81,22 @@ def main(
 def score(
     vcf_path: Path = typer.Argument(..., help="Path to VCF file containing variants to score."),
     output: Path = typer.Option("results", "--output", "-o", help="Output directory for results."),
-    genes: Optional[str] = typer.Option(
-        None, "--genes", "-g",
+    genes: str | None = typer.Option(
+        None,
+        "--genes",
+        "-g",
         help="Comma-separated gene list to filter results (e.g., BRCA1,TP53,CFTR).",
     ),
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to alphavx.yaml configuration file.",
+    config_path: Path | None = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Path to alphavx.yaml configuration file.",
     ),
     no_cache: bool = typer.Option(False, "--no-cache", help="Disable result caching."),
 ) -> None:
     """Score all variants in a VCF file against AlphaGenome."""
-    console = _get_console()
+    _get_console()
 
     # Load config
     try:
@@ -147,6 +160,7 @@ def score(
     # Generate plots
     try:
         from .plots import plot_summary_heatmap, plot_variant_detail
+
         plots_dir = output / "plots"
         plot_summary_heatmap(df, plots_dir / "summary_heatmap.png", config.quantile_threshold)
 
@@ -155,7 +169,9 @@ def score(
         for vk in variant_keys:
             safe_name = str(vk).replace(":", "_").replace(">", "_")
             plot_variant_detail(
-                df, vk, plots_dir / "per_variant" / f"{safe_name}.png",
+                df,
+                vk,
+                plots_dir / "per_variant" / f"{safe_name}.png",
                 config.quantile_threshold,
             )
         if len(variant_keys):
@@ -170,7 +186,12 @@ def score(
 
     typer.echo("")
     typer.echo("═" * 50)
-    typer.echo(f"  Variants scored:    {df['variant_key'].nunique() if 'variant_key' in df.columns else '?'}")
+    n_scored = (
+        df["variant_key"].nunique()
+        if "variant_key" in df.columns
+        else "?"
+    )
+    typer.echo(f"  Variants scored:    {n_scored}")
     typer.echo(f"  Significant hits:   {sig_count}")
     typer.echo(f"  Results:            {output / 'scores.csv'}")
     typer.echo(f"  Report:             {output / 'report.html'}")
@@ -180,13 +201,20 @@ def score(
 @app.command()
 def query(
     variant: str = typer.Argument(
-        ..., help="Variant to score (e.g., chr17:7674220:G>A or chr17:7674220:G:A).",
+        ...,
+        help="Variant to score (e.g., chr17:7674220:G>A or chr17:7674220:G:A).",
     ),
-    output: Optional[Path] = typer.Option(
-        None, "--output", "-o", help="Optional directory to save full CSV results.",
+    output: Path | None = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Optional directory to save full CSV results.",
     ),
-    config_path: Optional[Path] = typer.Option(
-        None, "--config", "-c", help="Path to alphavx.yaml configuration file.",
+    config_path: Path | None = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Path to alphavx.yaml configuration file.",
     ),
 ) -> None:
     """Score a single variant and display results."""
@@ -224,10 +252,15 @@ def query(
     typer.echo(f"Significant:  {len(sig)}")
 
     if not sig.empty:
-        typer.echo(f"\n{'Variant':<25} {'Gene':<12} {'Modality':<20} {'Tissue':<25} {'Raw':<12} {'Quantile':<10}")
+        header = (
+            f"{'Variant':<25} {'Gene':<12} {'Modality':<20}"
+            f" {'Tissue':<25} {'Raw':<12} {'Quantile':<10}"
+        )
+        typer.echo(f"\n{header}")
         typer.echo("─" * 104)
-        display_cols = ["variant_key", "gene_name", "output_type", "biosample_name", "raw_score", "quantile_score"]
-        for _, row in sig.sort_values("quantile_score", key=abs, ascending=False).head(30).iterrows():
+        for _, row in (
+            sig.sort_values("quantile_score", key=abs, ascending=False).head(30).iterrows()
+        ):
             vk = str(row.get("variant_key", ""))[:24]
             gene = str(row.get("gene_name", ""))[:11]
             mod = str(row.get("output_type", ""))[:19]
@@ -245,7 +278,8 @@ def query(
 @app.command()
 def report(
     results_dir: Path = typer.Argument(
-        ..., help="Directory containing scores.csv to generate report from.",
+        ...,
+        help="Directory containing scores.csv to generate report from.",
     ),
 ) -> None:
     """Generate an HTML report from existing scoring results."""
@@ -260,7 +294,10 @@ def report(
 @cache_app.command("stats")
 def cache_stats(
     cache_dir: Path = typer.Option(
-        "results/cache", "--dir", "-d", help="Cache directory.",
+        "results/cache",
+        "--dir",
+        "-d",
+        help="Cache directory.",
     ),
 ) -> None:
     """Show cache statistics."""
@@ -274,7 +311,10 @@ def cache_stats(
 @cache_app.command("clear")
 def cache_clear(
     cache_dir: Path = typer.Option(
-        "results/cache", "--dir", "-d", help="Cache directory.",
+        "results/cache",
+        "--dir",
+        "-d",
+        help="Cache directory.",
     ),
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt."),
 ) -> None:

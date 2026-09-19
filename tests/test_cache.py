@@ -1,7 +1,8 @@
 """Tests for the SQLite result cache module."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from alphavx.cache import ResultCache
 

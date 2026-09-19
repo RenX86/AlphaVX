@@ -47,6 +47,7 @@ class ResultCache:
 
     def __init__(self, cache_dir: Path, config_hash: str | None = None) -> None:
         import threading
+
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.db_path = self.cache_dir / "alphavx_cache.db"
@@ -94,8 +95,7 @@ class ResultCache:
             return False
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "SELECT 1 FROM variant_scores "
-                "WHERE variant_key = ? AND config_hash = ?",
+                "SELECT 1 FROM variant_scores WHERE variant_key = ? AND config_hash = ?",
                 (variant_key, self.config_hash),
             )
             return cursor.fetchone() is not None
@@ -113,8 +113,7 @@ class ResultCache:
             return None
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "SELECT scores_json FROM variant_scores "
-                "WHERE variant_key = ? AND config_hash = ?",
+                "SELECT scores_json FROM variant_scores WHERE variant_key = ? AND config_hash = ?",
                 (variant_key, self.config_hash),
             )
             row = cursor.fetchone()
@@ -135,8 +134,7 @@ class ResultCache:
             with sqlite3.connect(self.db_path) as conn:
                 # Remove any previous entry for the same (variant, config) pair.
                 conn.execute(
-                    "DELETE FROM variant_scores "
-                    "WHERE variant_key = ? AND config_hash IS ?",
+                    "DELETE FROM variant_scores WHERE variant_key = ? AND config_hash IS ?",
                     (variant_key, self.config_hash),
                 )
                 conn.execute(

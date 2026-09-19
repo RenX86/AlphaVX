@@ -10,18 +10,17 @@ Covers:
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from textwrap import dedent
 
 import pytest
 
-from alphavx.config import Config, load_config, DEFAULT_MODALITIES
-
+from alphavx.config import DEFAULT_MODALITIES, Config, load_config
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def yaml_file(tmp_path: Path) -> Path:
@@ -51,6 +50,7 @@ def yaml_file(tmp_path: Path) -> Path:
 # Config dataclass defaults
 # ---------------------------------------------------------------------------
 
+
 class TestConfigDefaults:
     """Verify Config dataclass defaults."""
 
@@ -71,6 +71,7 @@ class TestConfigDefaults:
 # ---------------------------------------------------------------------------
 # YAML loading
 # ---------------------------------------------------------------------------
+
 
 class TestYamlLoading:
     """Tests for load_config with YAML files."""
@@ -115,6 +116,7 @@ class TestYamlLoading:
 # ---------------------------------------------------------------------------
 # API key resolution
 # ---------------------------------------------------------------------------
+
 
 class TestApiKeyResolution:
     """Tests for API key lookup from environment variables."""
@@ -174,6 +176,7 @@ class TestApiKeyResolution:
 # ---------------------------------------------------------------------------
 # Config.scoring_fingerprint (cache invalidation fix)
 # ---------------------------------------------------------------------------
+
 
 class TestScoringFingerprint:
     """Tests for the config fingerprint used in cache invalidation."""

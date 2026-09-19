@@ -65,8 +65,7 @@ class Config:
         different scoring configurations produce distinct cache entries.
         """
         canonical = json.dumps(
-            {"modalities": sorted(self.modalities),
-             "sequence_length": self.sequence_length},
+            {"modalities": sorted(self.modalities), "sequence_length": self.sequence_length},
             sort_keys=True,
         )
         return hashlib.sha256(canonical.encode()).hexdigest()[:12]

@@ -10,8 +10,7 @@ Covers:
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, PropertyMock
-import time
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -20,10 +19,10 @@ from alphavx.config import Config
 from alphavx.scorer import VariantScorer
 from alphavx.vcf_parser import VariantRecord
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_record(chrom="chr17", pos=7674220, ref="G", alt="A") -> VariantRecord:
     return VariantRecord(chrom=chrom, pos=pos, ref=ref, alt=alt)
@@ -49,18 +48,21 @@ def _mock_score_adata():
 
 def _fake_tidy_df(variant_key: str = "chr17:7674220:G>A") -> pd.DataFrame:
     """Build a realistic tidy DataFrame as score_variant would produce."""
-    return pd.DataFrame({
-        "biosample_name": ["brain", "liver"],
-        "gene_name": ["TP53", "TP53"],
-        "output_type": ["RNA_SEQ", "DNASE"],
-        "raw_score": [0.42, -0.18],
-        "quantile_score": [0.997, 0.500],
-    })
+    return pd.DataFrame(
+        {
+            "biosample_name": ["brain", "liver"],
+            "gene_name": ["TP53", "TP53"],
+            "output_type": ["RNA_SEQ", "DNASE"],
+            "raw_score": [0.42, -0.18],
+            "quantile_score": [0.997, 0.500],
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def config() -> Config:
@@ -85,6 +87,7 @@ def mock_cache():
 # VariantScorer — score_variant
 # ---------------------------------------------------------------------------
 
+
 class TestScoreVariant:
     """Tests for VariantScorer.score_variant."""
 
@@ -93,6 +96,7 @@ class TestScoreVariant:
     def test_returns_dataframe_with_variant_columns(self, _scorers, _init, scorer):
         """score_variant should return a DF with chrom/pos/ref/alt/variant_key."""
         import sys
+
         record = _make_record()
 
         # Mock the client.score_variant call
@@ -101,7 +105,7 @@ class TestScoreVariant:
         scorer._client.score_variant.return_value = [mock_adata]
 
         # Set up the mock module attributes that score_variant imports lazily
-        genome_mock = sys.modules["alphagenome.data.genome"]
+        sys.modules["alphagenome.data.genome"]
         variant_scorers_mock = sys.modules["alphagenome.models.variant_scorers"]
         variant_scorers_mock.tidy_scores = MagicMock(return_value=_fake_tidy_df())
 
@@ -130,6 +134,7 @@ class TestScoreVariant:
 # ---------------------------------------------------------------------------
 # VariantScorer — score_batch
 # ---------------------------------------------------------------------------
+
 
 class TestScoreBatch:
     """Tests for VariantScorer.score_batch (loop, cache, progress)."""
@@ -226,6 +231,7 @@ class TestScoreBatch:
 # VariantScorer — retry logic
 # ---------------------------------------------------------------------------
 
+
 class TestRetryLogic:
     """Tests for _score_with_retry."""
 
@@ -247,7 +253,8 @@ class TestRetryLogic:
         expected = pd.DataFrame({"raw_score": [1.0]})
 
         with patch.object(
-            scorer, "score_variant",
+            scorer,
+            "score_variant",
             side_effect=[RuntimeError("fail"), RuntimeError("fail"), expected],
         ) as mock_sv:
             result = scorer._score_with_retry(record)
@@ -260,7 +267,8 @@ class TestRetryLogic:
         record = _make_record()
 
         with patch.object(
-            scorer, "score_variant",
+            scorer,
+            "score_variant",
             side_effect=RuntimeError("persistent failure"),
         ) as mock_sv:
             result = scorer._score_with_retry(record)
@@ -275,7 +283,8 @@ class TestRetryLogic:
         record = _make_record()
 
         with patch.object(
-            scorer, "score_variant",
+            scorer,
+            "score_variant",
             side_effect=RuntimeError("fail"),
         ) as mock_sv:
             scorer._score_with_retry(record)
@@ -287,11 +296,13 @@ class TestRetryLogic:
 # VariantScorer — _get_scorers
 # ---------------------------------------------------------------------------
 
+
 class TestGetScorers:
     """Tests for _get_scorers modality lookup."""
 
     def test_known_modalities_returned(self):
         import sys
+
         config = _make_config(modalities=["RNA_SEQ", "DNASE"])
         scorer = VariantScorer(config)
 
@@ -308,6 +319,7 @@ class TestGetScorers:
 
     def test_unknown_modality_skipped(self):
         import sys
+
         config = _make_config(modalities=["RNA_SEQ", "NONEXISTENT"])
         scorer = VariantScorer(config)
 
@@ -321,4 +333,3 @@ class TestGetScorers:
             vs_mod.RECOMMENDED_VARIANT_SCORERS = original
 
         assert result == ["rna_scorer"]
-

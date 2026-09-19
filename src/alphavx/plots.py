@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")  # Headless rendering — no display required
 
 import matplotlib.pyplot as plt
@@ -51,7 +52,10 @@ def plot_summary_heatmap(
     # Build pivot table: variant × modality → raw_score (take max abs per cell)
     if "variant_key" not in sig.columns:
         sig["variant_key"] = sig.apply(
-            lambda r: f"{r.get('chrom', '')}:{r.get('pos', '')}:{r.get('ref', '')}>{r.get('alt', '')}",
+            lambda r: (
+                f"{r.get('chrom', '')}:{r.get('pos', '')}:"
+                f"{r.get('ref', '')}>{r.get('alt', '')}"
+            ),
             axis=1,
         )
 
@@ -135,12 +139,11 @@ def plot_variant_detail(
 
     # Color by significance
     colors = [
-        "#e74c3c" if abs(q) > quantile_threshold else "#95a5a6"
-        for q in agg["quantile_score"]
+        "#e74c3c" if abs(q) > quantile_threshold else "#95a5a6" for q in agg["quantile_score"]
     ]
 
     fig, ax = plt.subplots(figsize=(10, max(4, len(agg) * 0.5 + 1)))
-    bars = ax.barh(agg["output_type"], agg["raw_score"], color=colors, edgecolor="white")
+    ax.barh(agg["output_type"], agg["raw_score"], color=colors, edgecolor="white")
 
     ax.axvline(x=0, color="black", linewidth=0.8)
     ax.set_xlabel("Raw Score (log-fold change)", fontsize=11)
@@ -148,6 +151,7 @@ def plot_variant_detail(
 
     # Add significance legend
     from matplotlib.patches import Patch
+
     legend_elements = [
         Patch(facecolor="#e74c3c", label=f"Significant (|q| > {quantile_threshold})"),
         Patch(facecolor="#95a5a6", label="Not significant"),
@@ -165,9 +169,14 @@ def _save_empty_figure(output_path: Path, message: str) -> None:
     """Save a placeholder figure with a text message."""
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.text(
-        0.5, 0.5, message,
-        transform=ax.transAxes, ha="center", va="center",
-        fontsize=14, color="#999",
+        0.5,
+        0.5,
+        message,
+        transform=ax.transAxes,
+        ha="center",
+        va="center",
+        fontsize=14,
+        color="#999",
     )
     ax.set_axis_off()
     fig.savefig(output_path, dpi=100, bbox_inches="tight")

@@ -9,7 +9,8 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -172,7 +173,7 @@ class VariantScorer:
 
             # Score with retry logic
             df = self._score_with_retry(record)
-            
+
             with progress_lock:
                 completed += 1
                 if df is not None and not df.empty:
@@ -189,7 +190,7 @@ class VariantScorer:
 
         # Default max_workers to a sensible limit (e.g. 4-8) to avoid overwhelming the API
         max_workers = min(8, max(4, (os.cpu_count() or 1) + 4))
-        
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Map returns results in the same order as the input
             results = executor.map(_process_record, records)

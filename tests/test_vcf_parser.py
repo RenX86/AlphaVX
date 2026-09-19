@@ -1,10 +1,10 @@
 """Tests for the VCF parser module."""
 
-import pytest
 from pathlib import Path
 
-from alphavx.vcf_parser import parse_vcf, parse_variant_string, VariantRecord
+import pytest
 
+from alphavx.vcf_parser import VariantRecord, parse_variant_string, parse_vcf
 
 VALID_VCF_CONTENT = """##fileformat=VCFv4.2
 ##source=test

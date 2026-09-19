@@ -81,15 +81,23 @@ def generate_vcf_report(
             df["_is_sig"] = False
 
         for vk, group in df.groupby("variant_key"):
-            max_row = group.loc[group["raw_score"].abs().idxmax()] if "raw_score" in group.columns else None
+            max_row = (
+                group.loc[group["raw_score"].abs().idxmax()]
+                if "raw_score" in group.columns
+                else None
+            )
             max_score = max_row["raw_score"] if max_row is not None else 0.0
 
-            sig_mods = group[group["_is_sig"]]["output_type"].unique() if "output_type" in group.columns else []
+            sig_mods = (
+                group[group["_is_sig"]]["output_type"].unique()
+                if "output_type" in group.columns
+                else []
+            )
 
             annotations[vk] = {
                 "max_score": max_score,
                 "is_sig": len(sig_mods) > 0,
-                "sig_mods": ",".join(sig_mods) if len(sig_mods) > 0 else None
+                "sig_mods": ",".join(sig_mods) if len(sig_mods) > 0 else None,
             }
 
     # Write annotated VCF
@@ -103,9 +111,23 @@ def generate_vcf_report(
 
             if line.startswith("#CHROM"):
                 # Inject new INFO headers before the CHROM line
-                f_out.write('##INFO=<ID=AVX_SIG,Number=0,Type=Flag,Description="AlphaVX significant hit">\n')
-                f_out.write('##INFO=<ID=AVX_MOD,Number=.,Type=String,Description="AlphaVX significant modalities">\n')
-                f_out.write('##INFO=<ID=AVX_MAX,Number=1,Type=Float,Description="AlphaVX maximum absolute raw score">\n')
+                _sig = (
+                    "##INFO=<ID=AVX_SIG,Number=0,"
+                    'Type=Flag,Description="AlphaVX significant hit">'
+                )
+                _mod = (
+                    "##INFO=<ID=AVX_MOD,Number=.,"
+                    "Type=String,"
+                    'Description="AlphaVX significant modalities">'
+                )
+                _max = (
+                    "##INFO=<ID=AVX_MAX,Number=1,"
+                    "Type=Float,"
+                    'Description="AlphaVX max absolute raw score">'
+                )
+                f_out.write(_sig + "\n")
+                f_out.write(_mod + "\n")
+                f_out.write(_max + "\n")
                 f_out.write(line + "\n")
                 continue
 
@@ -199,8 +221,12 @@ def generate_html_report(
         sig_df = sig_df.sort_values("quantile_score", key=abs, ascending=False)
 
     display_cols = [
-        "variant_key", "gene_name", "output_type", "biosample_name",
-        "raw_score", "quantile_score",
+        "variant_key",
+        "gene_name",
+        "output_type",
+        "biosample_name",
+        "raw_score",
+        "quantile_score",
     ]
     table_data = []
     for _, row in sig_df.iterrows():
@@ -230,14 +256,13 @@ def generate_html_report(
             values="raw_score",
             aggfunc=lambda x: x.iloc[x.abs().argmax()],
         )
-        heatmap_json = _json.dumps({
-            "variants": pivot.index.tolist(),
-            "modalities": pivot.columns.tolist(),
-            "z": [
-                [round(v, 4) if pd.notna(v) else None for v in row]
-                for row in pivot.values
-            ],
-        })
+        heatmap_json = _json.dumps(
+            {
+                "variants": pivot.index.tolist(),
+                "modalities": pivot.columns.tolist(),
+                "z": [[round(v, 4) if pd.notna(v) else None for v in row] for row in pivot.values],
+            }
+        )
 
     # Volcano data: raw_score vs -log10(1 - |quantile|)
     volcano_json = "[]"
@@ -248,32 +273,34 @@ def generate_html_report(
         for _, row in sig_df.iterrows():
             q = abs(row.get("quantile_score", 0))
             neg_log = -math.log10(max(1 - q, 1e-10))
-            volcano_records.append({
-                "x": round(row.get("raw_score", 0), 6),
-                "y": round(neg_log, 4),
-                "variant": html.escape(str(row.get("variant_key", ""))),
-                "gene": html.escape(str(row.get("gene_name", ""))),
-                "modality": html.escape(str(row.get("output_type", ""))),
-            })
+            volcano_records.append(
+                {
+                    "x": round(row.get("raw_score", 0), 6),
+                    "y": round(neg_log, 4),
+                    "variant": html.escape(str(row.get("variant_key", ""))),
+                    "gene": html.escape(str(row.get("gene_name", ""))),
+                    "modality": html.escape(str(row.get("output_type", ""))),
+                }
+            )
         volcano_json = _json.dumps(volcano_records)
 
     # Modality breakdown: count of sig hits per variant per modality
     breakdown_json = "{}"
     if not sig_df.empty and "variant_key" in sig_df.columns and "output_type" in sig_df.columns:
         bd = sig_df.groupby(["variant_key", "output_type"]).size().unstack(fill_value=0)
-        breakdown_json = _json.dumps({
-            "variants": bd.index.tolist(),
-            "modalities": bd.columns.tolist(),
-            "counts": bd.values.tolist(),
-        })
+        breakdown_json = _json.dumps(
+            {
+                "variants": bd.index.tolist(),
+                "modalities": bd.columns.tolist(),
+                "counts": bd.values.tolist(),
+            }
+        )
 
     # ------------------------------------------------------------------
     # Escape user-supplied strings
     # ------------------------------------------------------------------
     escaped_title = html.escape(title)
-    escaped_mod_tags = "".join(
-        f'<span class="mod-tag">{html.escape(m)}</span>' for m in modalities
-    )
+    escaped_mod_tags = "".join(f'<span class="mod-tag">{html.escape(m)}</span>' for m in modalities)
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     # ------------------------------------------------------------------
@@ -593,7 +620,8 @@ function renderCharts() {{
         }}, t), {{ responsive: true }});
     }} else {{
         document.getElementById('heatmap').innerHTML =
-            '<p style="text-align:center;padding:3rem;color:#999;">No significant results to display</p>';
+            '<p style="text-align:center;padding:3rem;color:#999;">'
+            + 'No significant results to display</p>';
     }}
 
     // -- Volcano plot --
