@@ -136,9 +136,10 @@ class TestHtmlReport:
         path = generate_html_report(df, tmp_path, quantile_threshold=0.995)
         html = path.read_text(encoding="utf-8")
 
-        # Raw HTML should NOT appear unescaped
-        assert "<script>" not in html
-        assert "&lt;script&gt;" in html or "alert" not in html
+        # The report has legitimate <script> tags for JS libraries,
+        # but user-supplied values must be escaped in the data.
+        # Check that the malicious variant_key appears escaped in the JSON data.
+        assert '&lt;script&gt;alert' in html or '<script>alert' not in html
         # Ampersand in gene name should be escaped
         assert "GENE&amp;CO" in html or "GENE&CO" not in html.replace("&amp;", "")
 

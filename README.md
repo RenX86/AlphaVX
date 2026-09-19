@@ -1,5 +1,8 @@
 # AlphaVX
 
+[![CI](https://github.com/RenX86/AlphaVX/actions/workflows/ci.yml/badge.svg)](https://github.com/RenX86/AlphaVX/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 Batch-score genetic variants against [AlphaGenome](https://deepmind.google.com/science/alphagenome/) and generate interpretable effect reports — gene expression, splicing, chromatin accessibility, histone marks, and transcription factor binding — in one command.
 
 ```bash
