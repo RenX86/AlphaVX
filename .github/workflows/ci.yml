@@ -28,9 +28,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install CI deps (excludes alphagenome which needs Google auth).
-          # Tests mock alphagenome via conftest.py.
-          pip install ".[ci]" --no-deps
+          # Install the CI extras (all runtime deps EXCEPT alphagenome).
+          # Then install the package itself without pulling alphagenome.
+          pip install ".[ci]"
           pip install -e . --no-deps
 
       - name: Lint with ruff
