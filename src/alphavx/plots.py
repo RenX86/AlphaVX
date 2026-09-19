@@ -53,8 +53,7 @@ def plot_summary_heatmap(
     if "variant_key" not in sig.columns:
         sig["variant_key"] = sig.apply(
             lambda r: (
-                f"{r.get('chrom', '')}:{r.get('pos', '')}:"
-                f"{r.get('ref', '')}>{r.get('alt', '')}"
+                f"{r.get('chrom', '')}:{r.get('pos', '')}:{r.get('ref', '')}>{r.get('alt', '')}"
             ),
             axis=1,
         )

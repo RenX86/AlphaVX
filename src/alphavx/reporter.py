@@ -112,8 +112,7 @@ def generate_vcf_report(
             if line.startswith("#CHROM"):
                 # Inject new INFO headers before the CHROM line
                 _sig = (
-                    "##INFO=<ID=AVX_SIG,Number=0,"
-                    'Type=Flag,Description="AlphaVX significant hit">'
+                    '##INFO=<ID=AVX_SIG,Number=0,Type=Flag,Description="AlphaVX significant hit">'
                 )
                 _mod = (
                     "##INFO=<ID=AVX_MOD,Number=.,"

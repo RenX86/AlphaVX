@@ -186,11 +186,7 @@ def score(
 
     typer.echo("")
     typer.echo("═" * 50)
-    n_scored = (
-        df["variant_key"].nunique()
-        if "variant_key" in df.columns
-        else "?"
-    )
+    n_scored = df["variant_key"].nunique() if "variant_key" in df.columns else "?"
     typer.echo(f"  Variants scored:    {n_scored}")
     typer.echo(f"  Significant hits:   {sig_count}")
     typer.echo(f"  Results:            {output / 'scores.csv'}")

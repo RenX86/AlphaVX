@@ -76,3 +76,4 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]  # Line length is enforced by ruff format, not lint
