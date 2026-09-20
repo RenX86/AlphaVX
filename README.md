@@ -1,5 +1,9 @@
 # AlphaVX
 
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="AlphaVX Logo" />
+</p>
+
 [![CI](https://github.com/RenX86/AlphaVX/actions/workflows/ci.yml/badge.svg)](https://github.com/RenX86/AlphaVX/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
@@ -33,36 +37,58 @@ AlphaGenome (DeepMind, Jan 2026) is a deep learning model that predicts how DNA 
 pip install alphavx
 ```
 
-Or from source:
+> **Note:** AlphaVX requires an API key from Google DeepMind. [Sign up here](https://deepmind.google.com/science/alphagenome/) if you don't have one.
+
+Once installed, configure your API key securely:
 
 ```bash
-git clone https://github.com/RenX86/AlphaVX
-cd AlphaVX
-pip install -e .
+alphavx configure
 ```
 
-### Get an API Key
+*(This saves your key globally to `~/.alphavx/.env` so you can run the tool from anywhere).*
 
-1. Sign up at [deepmind.google.com/science/alphagenome](https://deepmind.google.com/science/alphagenome/)
-2. Set your key:
-   ```bash
-   export ALPHAVX_API_KEY="your-key-here"
-   ```
+---
 
-### Run
+## Quickstart
+
+If you don't have a VCF file handy, you can generate a small sample dataset instantly:
 
 ```bash
-# Score all variants in a VCF
-alphavx score input.vcf -o results/
+alphavx init
+```
 
-# Score with gene panel filter
+Now, score the variants:
+
+```bash
+alphavx score clinvar_example.vcf -o results/
+
+## CLI Commands
+
+AlphaVX provides several commands for managing configuration, scoring variants, and viewing results.
+
+|    Command    |                                  Description                                  |                Example                |
+|---------------|-------------------------------------------------------------------------------|---------------------------------------|
+| `configure`   | Interactively save your API key globally.                                     | `alphavx configure`                   |
+| `init`        | Generate a sample `clinvar_example.vcf` in the current directory for testing. | `alphavx init `                       |
+| `score`       | Batch-score a VCF file, returning interactive reports and annotated VCFs.     | `alphavx score input.vcf -o results/` |
+| `query`       | Quickly score a single variant string.                                        | `alphavx query chr17:7674220:G>A`     |
+| `report`      | Regenerate the interactive HTML report from existing CSV results.             | `alphavx report results/`             |
+| `cache stats` | View the size and hit rate of your local SQLite cache.                        | `alphavx cache stats`                 |
+| `cache clear` | Delete all cached responses to force re-scoring.                              | `alphavx cache clear`                 |
+| `--help`      | Show the help message and exit.                                               | `alphavx --help`                      |
+
+### Scoring Options
+You can further refine the `score` command using options:
+
+```bash
+# Filter variants by a specific gene panel before scoring
 alphavx score input.vcf --genes BRCA1,TP53,CFTR -o results/
 
-# Score a single variant
-alphavx query chr17:7674220:G\>A
+# Use a specific configuration file (for custom thresholds or modalities)
+alphavx score input.vcf --config custom_alphavx.yaml -o results/
 
-# Generate HTML report from cached results
-alphavx report results/
+# Disable the local SQLite cache to fetch fresh scores
+alphavx score input.vcf --no-cache -o results/
 ```
 
 ---
@@ -84,37 +110,37 @@ results/
 
 ### scores.csv columns
 
-| Column | Description |
-|--------|-------------|
-| `chrom` | Chromosome |
-| `pos` | Position (1-based) |
-| `ref` / `alt` | Reference and alternate alleles |
-| `gene` | Nearest gene |
-| `modality` | Scored output type (RNA_SEQ, SPLICE_SITES, DNASE, etc.) |
-| `tissue` | Biosample / tissue name |
-| `raw_score` | AlphaGenome raw effect score |
-| `quantile_score` | Percentile rank vs common variants (±0.999990 max) |
-| `significant` | Boolean flag (quantile > 0.995) |
+|      Column      | Description                                             |
+|------------------|---------------------------------------------------------|
+| `chrom`          | Chromosome                                              |
+| `pos`            | Position (1-based)                                      |
+| `ref` / `alt`    | Reference and alternate alleles                         |
+| `gene`           | Nearest gene                                            |
+| `modality`       | Scored output type (RNA_SEQ, SPLICE_SITES, DNASE, etc.) |
+| `tissue`         | Biosample / tissue name                                 |
+| `raw_score`      | AlphaGenome raw effect score                            |
+| `quantile_score` | Percentile rank vs common variants (±0.999990 max)      |
+| `significant`    | Boolean flag (quantile > 0.995)                         |
 
 ---
 
 ## How It Works
 
 ```
-VCF file
-   ↓
-Parse variants (chrom, pos, ref, alt)
-   ↓
-Check cache → skip already-scored variants
-   ↓
-For each variant:
-   → Build 1MB interval around variant
-   → Score against all recommended variant scorers
-   → Tidy scores, match gene strand
-   ↓
-Aggregate results → flag significant hits
-   ↓
-Generate report (CSV + HTML + plots)
+                                                    VCF file
+                                                       ↓
+                                     Parse variants (chrom, pos, ref, alt)
+                                                       ↓
+                                   Check cache → skip already-scored variants
+                                                       ↓
+                                              For each variant:
+                                                            → Build 1MB interval around variant
+                                                            → Score against all recommended variant scorers
+                                                            → Tidy scores, match gene strand
+                                                       ↓
+                                     Aggregate results → flag significant hits
+                                                       ↓
+                                       Generate report (CSV + HTML + plots)
 ```
 
 ---
@@ -161,7 +187,7 @@ output:
 ## Tech Stack
 
 | Component | Choice |
-|-----------|--------|
+| ----------- | -------- |
 | AlphaGenome SDK | `alphagenome>=0.6.1` |
 | CLI | Typer + Rich |
 | Caching | SQLite (zero-dependency, resumable) |

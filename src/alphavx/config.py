@@ -18,9 +18,10 @@ try:
 
     _ENV_FILENAME = ".env.alphavx"
 
-    # Search current dir and project root
+    # Search current dir, home dir, and project root
     _candidates = [
         Path.cwd() / _ENV_FILENAME,
+        Path.home() / ".alphavx" / ".env",
         Path(__file__).resolve().parent.parent.parent / _ENV_FILENAME,
     ]
     for _candidate in _candidates:
@@ -88,8 +89,15 @@ def load_config(config_path: Path | None = None) -> Config:
     config = Config()
     key_env_name: str | None = None
 
-    # Load from YAML if provided
-    if config_path is not None:
+    # Auto-discover config if not provided
+    if config_path is None:
+        if (Path.cwd() / "alphavx.yaml").exists():
+            config_path = Path.cwd() / "alphavx.yaml"
+        elif (Path.home() / ".alphavx" / "config.yaml").exists():
+            config_path = Path.home() / ".alphavx" / "config.yaml"
+
+    # Load from YAML if resolved
+    if config_path is not None and config_path.exists():
         try:
             import yaml
         except ImportError:

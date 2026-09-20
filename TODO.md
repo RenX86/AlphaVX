@@ -4,3 +4,4 @@
 4. ~~**Interactive HTML Report**: Upgrade the static HTML report to use DataTables.js and interactive Plotly graphs.~~
 5. ~~**CI/CD Pipeline**: Add GitHub Actions workflows for automated testing, linting, and PyPI publishing.~~
 6. Convert just the data-parsing layer to Rust.
+7. A small LLM/agent-assisted bioinformatics tool — e.g., a chatbot or CLI that answers questions about a VCF/BAM file using an LLM + real parsing underneath.
