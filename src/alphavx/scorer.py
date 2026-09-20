@@ -91,6 +91,7 @@ class VariantScorer:
         scorers = self._get_scorers()
         logger.info("Scoring %s against %d scorers...", record.key, len(scorers))
 
+        assert self._client is not None, "Client was not initialized properly"
         scores_list = self._client.score_variant(
             interval=interval,
             variant=variant,

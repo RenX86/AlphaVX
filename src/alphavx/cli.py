@@ -74,38 +74,39 @@ def main(
         help="Show version and exit.",
     ),
 ) -> None:
-    \"\"\"AlphaVX — AlphaGenome Variant Effect Interpreter.\"\"\"
+    """AlphaVX — AlphaGenome Variant Effect Interpreter."""
+    pass
 
 
 @app.command()
 def configure() -> None:
-    \"\"\"Interactively configure AlphaVX API keys globally.\"\"\"
+    """Interactively configure AlphaVX API keys globally."""
     typer.echo("AlphaVX Configuration")
     typer.echo("---------------------")
     api_key = typer.prompt("Enter your AlphaGenome API Key", hide_input=True)
 
     config_dir = Path.home() / ".alphavx"
     config_dir.mkdir(parents=True, exist_ok=True)
-    
+
     try:
         env_file = config_dir / ".env"
         with open(env_file, "w") as f:
-            f.write(f"ALPHAVX_API_KEY={api_key}\\n")
-            
-        typer.secho(f"\\n✅ API Key securely saved to {env_file}", fg=typer.colors.GREEN)
+            f.write(f"ALPHAVX_API_KEY={api_key}\n")
+
+        typer.secho(f"\n✅ API Key securely saved to {env_file}", fg=typer.colors.GREEN)
         typer.echo("You can now run 'alphavx score' from any directory.")
-        
+
     except Exception as e:
         typer.secho(f"Failed to save configuration: {e}", fg=typer.colors.RED, err=True)
 
 
 @app.command()
 def init() -> None:
-    \"\"\"Create a sample VCF file in the current directory for testing.\"\"\"
+    """Create a sample VCF file in the current directory for testing."""
     sample_vcf = Path.cwd() / "clinvar_example.vcf"
-    
+
     # A tiny VCF with a few known pathogenic variants
-    vcf_content = \"\"\"##fileformat=VCFv4.2
+    vcf_content = """##fileformat=VCFv4.2
 ##source=AlphaVX_Example
 ##contig=<ID=chr17,length=83257441>
 ##contig=<ID=chr7,length=159345973>
@@ -113,8 +114,8 @@ def init() -> None:
 chr17\t43094895\t.\tC\tT\t.\t.\tGENE=BRCA1;CLIN_SIG=Pathogenic
 chr7\t117559590\t.\tT\tC\t.\t.\tGENE=CFTR;CLIN_SIG=Pathogenic
 chr17\t7674220\t.\tG\tA\t.\t.\tGENE=TP53;CLIN_SIG=Pathogenic
-\"\"\"
-    
+"""
+
     try:
         with open(sample_vcf, "w") as f:
             f.write(vcf_content)
