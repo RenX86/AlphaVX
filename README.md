@@ -65,6 +65,7 @@ Now, score the variants:
 
 ```bash
 alphavx score clinvar_example.vcf -o results/
+```
 
 ## CLI Commands
 
@@ -134,21 +135,16 @@ results/
 
 ## How It Works
 
-```
-                                                    VCF file
-                                                       ↓
-                                     Parse variants (chrom, pos, ref, alt)
-                                                       ↓
-                                   Check cache → skip already-scored variants
-                                                       ↓
-                                              For each variant:
-                                                            → Build 1MB interval around variant
-                                                            → Score against all recommended variant scorers
-                                                            → Tidy scores, match gene strand
-                                                       ↓
-                                     Aggregate results → flag significant hits
-                                                       ↓
-                                       Generate report (CSV + HTML + plots)
+```mermaid
+flowchart TD
+    VCF[VCF File] --> Parse["Parse variants (chrom, pos, ref, alt)"]
+    Parse --> Cache["Check cache → skip already-scored variants"]
+    Cache --> Loop{"For each variant:"}
+    Loop --> B1["Build 1MB interval around variant"]
+    B1 --> B2["Score against all recommended variant scorers"]
+    B2 --> B3["Tidy scores, match gene strand"]
+    B3 --> Agg["Aggregate results → flag significant hits"]
+    Agg --> Rep["Generate report (CSV + HTML + plots)"]
 ```
 
 ---
