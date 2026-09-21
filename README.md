@@ -13,6 +13,10 @@ Batch-score genetic variants against [AlphaGenome](https://deepmind.google.com/s
 alphavx score variants.vcf -o results/
 ```
 
+<p align="center">
+  <img src="docs/assets/terminal_recording.gif" alt="Terminal Demo" style="max-width:100%; border-radius: 8px;">
+</p>
+
 ---
 
 ## What It Does
@@ -94,6 +98,10 @@ alphavx score input.vcf --no-cache -o results/
 ---
 
 ## Output
+
+<p align="center">
+  <img src="docs/assets/results_folder.gif" alt="Results Folder Demo" style="max-width:100%; border-radius: 8px;">
+</p>
 
 ```
 results/
